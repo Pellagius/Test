@@ -66,6 +66,7 @@ class TSBookOfEarthClanHouseTestGame :  SKScene, SKPhysicsContactDelegate
     var touchEmitter : SKEmitterNode = SKEmitterNode()
     var touchNode : Swipe?
     var touchStart : CGPoint = CGPoint()
+    var touchBeginning : CGPoint = CGPoint()
     
     
     //contentArray
@@ -251,6 +252,7 @@ class TSBookOfEarthClanHouseTestGame :  SKScene, SKPhysicsContactDelegate
         
        //swipe effect
         touchStart = CGPoint.zero
+        touchNode = Swipe(position: position, target: hudLayer)
         
     }
     
@@ -961,6 +963,7 @@ class TSBookOfEarthClanHouseTestGame :  SKScene, SKPhysicsContactDelegate
             player.alpha = 1.0
             setPlayerTexture(playerIdle)
             playerPhysicsBody.velocity.dx = 0
+            player.zRotation = 0
             break
         case .jumping:
             if playerPhysicsBody.velocity.dx > 0.0
@@ -971,6 +974,7 @@ class TSBookOfEarthClanHouseTestGame :  SKScene, SKPhysicsContactDelegate
             {
                 player.xScale = -1
             }
+            player.zRotation = 0
             playerPhysicsBody.affectedByGravity = true
             playerPhysicsBody.velocity.dy *= 0.92
             playerPhysicsBody.velocity.dx *= 0.96
@@ -989,6 +993,7 @@ class TSBookOfEarthClanHouseTestGame :  SKScene, SKPhysicsContactDelegate
             {
                 player.xScale = -1
             }
+            player.zRotation = 0
             playerPhysicsBody.velocity.dy *= 1.1
             playerPhysicsBody.affectedByGravity = true
             setPlayerTexture(playerJump)
@@ -1026,8 +1031,12 @@ class TSBookOfEarthClanHouseTestGame :  SKScene, SKPhysicsContactDelegate
         }
             let touch = touches.first!
             let touchLocation = touch.locationInNode(self)
-            print("THE TOUCH LOCATION IS : \(touchLocation)")
+        
+        
+        if (playable)
+        {
             placeTouchNode(touchLocation)
+        }
     
         
             //print("THE STATUS IS : \(status)")
@@ -1119,34 +1128,51 @@ class TSBookOfEarthClanHouseTestGame :  SKScene, SKPhysicsContactDelegate
     
     override func touchesMoved(touches: Set<UITouch>, withEvent event: UIEvent?)
     {
-        let touch = touches.first!
-        let currentPoint = touch.locationInNode(self)
-        let prevPoint = touch.previousLocationInNode(self)
-
-        touchStart = CGPoint(x: currentPoint.x - prevPoint.x, y: currentPoint.y - prevPoint.y)
+        if(playable)
+        {
+            let touch = touches.first!
+            let currentPoint = touch.locationInNode(self)
+            let prevPoint = touch.previousLocationInNode(self)
+            
+            touchStart = CGPoint(x: currentPoint.x - prevPoint.x, y: currentPoint.y - prevPoint.y)
+            touchBeginning = currentPoint
+        }
     }
     
     override func touchesEnded(touches: Set<UITouch>, withEvent event: UIEvent?)
     {
-        touchNode!.emitter?.numParticlesToEmit = 250
-        let timeToWait = NSTimeInterval(touchNode!.emitterLifeTime + (touchNode?.emitterLifeTimeRange)!/2)
-        print("THE TIME IS : \(timeToWait)")
-        runAction(SKAction.sequence([SKAction.waitForDuration(timeToWait), SKAction.runBlock()
-            {
-                self.removeTouchNode()
-            }]))
+        if(playable)
+        {
+            touchNode!.emitter?.numParticlesToEmit = 250
+            let timeToWait = NSTimeInterval(touchNode!.emitterLifeTime + (touchNode?.emitterLifeTimeRange)!/2)
 
+            runAction(SKAction.sequence([SKAction.waitForDuration(timeToWait), SKAction.runBlock()
+                {
+                    self.removeTouchNode()
+                }]))
+            
+            let touch = touches.first!
+            let currentPoint = touch.locationInNode(self)
+            let x = currentPoint.x - ((currentPoint.x - touchBeginning.x)/2)
+            let y = currentPoint.y - ((currentPoint.y - touchBeginning.y)/2)
+            let point = CGPointMake(x, y)
+            jump(point)
+        }
     }
+    
     
     override func touchesCancelled(touches: Set<UITouch>?, withEvent event: UIEvent?)
     {
-        touchNode!.emitter?.numParticlesToEmit = 250
-        let timeToWait = NSTimeInterval(touchNode!.emitterLifeTime + (touchNode?.emitterLifeTimeRange)!/2)
-        print("THE TIME IS : \(timeToWait)")
-        runAction(SKAction.sequence([SKAction.waitForDuration(timeToWait), SKAction.runBlock()
-            {
-                self.removeTouchNode()
-            }]))
+        if(playable)
+        {
+            touchNode!.emitter?.numParticlesToEmit = 250
+            let timeToWait = NSTimeInterval(touchNode!.emitterLifeTime + (touchNode?.emitterLifeTimeRange)!/2)
+            print("THE TIME IS : \(timeToWait)")
+            runAction(SKAction.sequence([SKAction.waitForDuration(timeToWait), SKAction.runBlock()
+                {
+                    self.removeTouchNode()
+                }]))
+        }
 
     }
     
@@ -1170,59 +1196,51 @@ class TSBookOfEarthClanHouseTestGame :  SKScene, SKPhysicsContactDelegate
         hideQuestionLabels(false)
     }
     
-    func getPlayerInput(moveVector : CGVector)
+    func jump(point : CGPoint)
     {
-        if state == .hanging
-        {
-            player.runAction(SKAction.rotateToAngle(0.0, duration: 0.0))
-        }
-        if(state != .attacking)
-        {
-            jump(moveVector)
-        }
-    }
-    
-    func jump(var moveVector : CGVector)
-    {
+        
+        var targetVector = CGVector(dx: point.x - player.position.x, dy: point.y - player.position.y)
+
+
         //chances are if this happens the player wants to double jump in the same direction
-        if (moveVector.length() < 350.0)
+        if (targetVector.length() < 350.0)
         {
-            moveVector = prevTargetVector
+            targetVector = prevTargetVector
         }
 
-        if(moveVector.dy > 0.0)
+        if(targetVector.dy > 0.0)
         {
-            prevTargetVector = moveVector
+            prevTargetVector = targetVector
         }
-
         if(state == .ground)
         {
-            if moveVector.dy <= -0.1
+            if targetVector.dy <= -0.1
             {
 
                 return
             }
-            else if moveVector.dy < 0.0
+            else if targetVector.dy < 0.0
             {
-                moveVector.dy = 0.1
+                targetVector.dy = 0.1
             }
         }
         
+        targetVector.normalize()
+        print("THE GROUND JUMP IS: \(CGVector(dx: targetVector.dx * jumpingForce, dy: targetVector.dy * jumpingForce*1.5))")
         if (state == .ground)
         {
-            playerPhysicsBody.applyImpulse(CGVector(dx: moveVector.dx * jumpingForce, dy: moveVector.dy * jumpingForce*1.5))
+            playerPhysicsBody.applyImpulse(CGVector(dx: targetVector.dx * jumpingForce, dy: targetVector.dy * jumpingForce*1.5))
         }
         else if (state == .jumping || state == .hanging)
         {
-            playerPhysicsBody.applyImpulse(CGVector(dx: moveVector.dx * jumpingForce, dy: moveVector.dy * jumpingForce*1.5))
+            playerPhysicsBody.applyImpulse(CGVector(dx: targetVector.dx * jumpingForce, dy: targetVector.dy * jumpingForce*1.5))
         }
         else if (state == .falling)
         {
             playerPhysicsBody.velocity = CGVector.zero
-            playerPhysicsBody.applyImpulse(CGVector(dx: moveVector.dx * jumpingForce, dy: moveVector.dy * jumpingForce*1.5))
+            playerPhysicsBody.applyImpulse(CGVector(dx: targetVector.dx * jumpingForce, dy: targetVector.dy * jumpingForce*1.5))
         }
         state = .jumping
-        
 
     }
     

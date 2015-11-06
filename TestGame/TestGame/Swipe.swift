@@ -32,7 +32,7 @@ class Swipe: SKNode {
         
         emitterLifeTime = emitter!.particleLifetime
         emitterLifeTimeRange = emitter!.particleLifetimeRange
-        
+
         
         let tip : SKSpriteNode = SKSpriteNode(color: UIColor.clearColor(), size: CGSizeMake(25, 25))
         tip.zRotation = 0.785398163
@@ -40,16 +40,8 @@ class Swipe: SKNode {
         self.addChild(tip)
         emitter!.zPosition = tip.zPosition + 1
         tip.addChild(emitter!)
-        
+        self.zRotation = 0
         self.setScale(0.6)
-    }
-    
-    func enablePhysics(categoryBitMask:UInt32, contactTestBitmask:UInt32, collisionBitmask:UInt32) {
-        self.physicsBody = SKPhysicsBody(circleOfRadius: 16)
-        self.physicsBody?.categoryBitMask = categoryBitMask
-        self.physicsBody?.contactTestBitMask = contactTestBitmask
-        self.physicsBody?.collisionBitMask = collisionBitmask
-        self.physicsBody?.dynamic = false
     }
 }
 
